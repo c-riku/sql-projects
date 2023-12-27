@@ -224,14 +224,52 @@ FROM world_life_expectancy
 GROUP BY
 Status;
 
-# Rolling total per country
+# Rolling total and growth mortality ratio per country
+
+WITH CTE AS
+(
+    SELECT
+        Country,
+        Year,
+        `Adult Mortality` AS AnnualAdultMortality,
+        LAG(`Adult Mortality`) OVER(PARTITION BY Country ORDER BY Year) AS AdultMortalityPrevYear,
+        SUM(`Adult Mortality`) OVER(PARTITION BY Country ORDER BY Year) AS RollingTotal
+    FROM
+        world_life_expectancy
+)
 
 SELECT
-Country,
-Year,
-`Life expectancy`,
-`Adult Mortality`,
-SUM(`Adult Mortality`) OVER(PARTITION BY Country ORDER BY Year) AS RollingTotal
-FROM world_life_expectancy;
+    *,
+    FORMAT(((AnnualAdultMortality - AdultMortalityPrevYear) / AdultMortalityPrevYear)*100, 2) AS GrowthMortalityRatio
+FROM
+    CTE;   
 
+
+# Rolling total and growth mortality ratio per year
+WITH CTE AS
+(
+    SELECT
+        Year,
+        SUM(`Adult Mortality`) AS AnnualAdultMortality
+    FROM world_life_expectancy
+    GROUP BY
+    Year
+),
+
+CTE2 AS
+(
+    SELECT
+        Year,
+        AnnualAdultMortality,
+        LAG(AnnualAdultMortality) OVER(ORDER BY Year) AS AdultMortalityPrevYear
+    FROM
+    CTE
+)
+
+SELECT
+    *,
+    FORMAT(((AnnualAdultMortality - AdultMortalityPrevYear) / AdultMortalityPrevYear)*100, 2) AS GrowthMortalityRatio
+FROM
+    CTE2;
+    
 
