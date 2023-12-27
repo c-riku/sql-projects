@@ -1,5 +1,9 @@
 # US Household Income
 
+## Let's have an overview of the data
+
+## One table has data on area of land and water per State, City, Geo Coordinates etc in the USA. The other table has data on the mean and median income. The tables are related to each other based on the field id.
+
 SELECT * FROM us_household_income;
 SELECT * FROM statistics;
 
@@ -10,6 +14,8 @@ SELECT
     COUNT(DISTINCT(row_id)),
     COUNT(DISTINCT(id))
 FROM us_household_income;
+
+## We have come duplicated ids, so we can identify and then remove them 
 
 SELECT
     *
@@ -38,14 +44,17 @@ WHERE row_id IN (
     temptbl
 WHERE RowNumber > 1);
 
-ALTER TABLE statistics
-RENAME COLUMN  `ï»¿id` TO ID;
-
+## No duplicate issue in Statistics table
 SELECT
     COUNT(ID),
     COUNT(DISTINCT(ID))
 FROM statistics;
 
+## Let's rename this column
+ALTER TABLE statistics
+RENAME COLUMN  `ï»¿id` TO ID;
+
+## Let's fix some spelling mistakes
 SELECT DISTINCT
 State_Name
 FROM us_household_income
@@ -59,23 +68,6 @@ UPDATE us_household_income
 SET State_Name = 'Alabama'
 WHERE State_Name = 'alabama';
 
-UPDATE us_household_income
-SET Place = 'Autaugaville'
-WHERE City = 'Vinemont'
-AND County = 'Autauga County';
-
-SELECT
-    Type,
-    COUNT(Type)
-FROM
-us_household_income
-GROUP BY
-    Type;
-
-UPDATE us_household_income
-SET Type = 'Borough'
-WHERE Type = 'Boroughs';
-
 SELECT
     `Primary`,
     COUNT(`Primary`)
@@ -88,6 +80,26 @@ UPDATE us_household_income
 SET `Primary` = 'Place'
 WHERE `Primary` = 'place';
 
+## Let's fill some missing data
+UPDATE us_household_income
+SET Place = 'Autaugaville'
+WHERE City = 'Vinemont'
+AND County = 'Autauga County';
+
+## Let's group some data that belong to same category
+SELECT
+    Type,
+    COUNT(Type)
+FROM
+us_household_income
+GROUP BY
+    Type;
+
+UPDATE us_household_income
+SET Type = 'Borough'
+WHERE Type = 'Boroughs';
+
+## Let's check for missing data
 SELECT
     ALand,
     AWater
@@ -100,10 +112,8 @@ WHERE AWater IN ('', 0) OR AWater IS NULL OR ALand IN ('', 0) OR ALand IS NULL;
 ## Top 10 States regarding land area
 SELECT
     State_Name,
-    FORMAT(SUM(ALand), 0) TotalLandArea,
-    FORMAT(SUM(AWater), 0) TotalWaterArea,
-    FORMAT(AVG(ALand), 0) AvgLandArea,
-    FORMAT(AVG(AWater), 0) AvgWaterArea
+    ROUND(SUM(ALand), 0) TotalLandArea,
+    ROUND(SUM(AWater), 0) TotalWaterArea
 FROM
     us_household_income
 GROUP BY
@@ -112,7 +122,9 @@ ORDER BY
     SUM(ALand) DESC
     LIMIT 10;
  
-##Top 10 States regarding annual income 
+## Top 10 States regarding annual income 
+## District of Columbia has the highest mean income
+
 SELECT
     tbl1.State_Name State,
     ROUND(AVG(tbl2.Mean), 0) AVGMeanIncome,
@@ -128,6 +140,7 @@ ORDER BY 2 DESC
 LIMIT 10;
 
 ## Income by type of household
+## Municipality Type of household has the highest mean income. It however includes only one data point. We may want to group this data with another Type. CPD might also be grouped with CDP assuming it's a typpo.
 SELECT
     tbl1.Type,
     COUNT(tbl1.Type),
@@ -143,6 +156,7 @@ GROUP BY
 ORDER BY 3 DESC;
 
 ##Top city income in each State
+## Here we find out which is the city per state that has the highest mean income
 
 SELECT
     State_Name,
